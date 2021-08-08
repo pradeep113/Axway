@@ -1,0 +1,297 @@
+#------------------------------------------------------------------------------------
+# TITLE                : Python script to get failed transfer from stat file of gateway 
+# AUTHOR               : Pradeep kumar
+# PROJET               :
+# DESCRIPTION          : Get failed transfers details written in a file
+# PARAMETRES           : NA
+
+#------------------------------------------------------------------------------------
+# INPUT FILE           : N/A
+#
+
+
+import os
+import re
+# Define a filename.
+os.system("grep -Fxvf <GTW_INSTALLPATH>/pradeep/GTW_MONITORING/stat.dat_prev /opt/gateway/Axway/Gateway/run_time/data/stat.dat>/opt/gateway/pradeep/GTW_MONITORING/stat.dat_diff")
+os.system("grep CANCEL <GTW_INSTALLPATH>/pradeep/GTW_MONITORING/stat.dat_diff|grep -v archive>/opt/gateway/pradeep/GTW_MONITORING/CANCELstatFile.dat")
+os.system("grep PHSE <GTW_INSTALLPATH>/pradeep/GTW_MONITORING/CANCELstatFile.dat>/opt/gateway/pradeep/GTW_MONITORING/PHSEstatFile.dat")
+os.system("grep SFTP <GTW_INSTALLPATH>/pradeep/GTW_MONITORING/CANCELstatFile.dat>/opt/gateway/pradeep/GTW_MONITORING/SFTPstatFile.dat")
+os.system("grep AS2 <GTW_INSTALLPATH>/pradeep/GTW_MONITORING/CANCELstatFile.dat>/opt/gateway/pradeep/GTW_MONITORING/AS2statFile.dat")
+os.system("cat <GTW_INSTALLPATH>/pradeep/GTW_MONITORING/stat.dat_diff>>/opt/gateway/pradeep/GTW_MONITORING/stat.dat_prev")
+
+cancelfilename = "<GTW_INSTALLPATH>/pradeep/GTW_MONITORING/CANCELstatFile.dat"
+phsefilename = "<GTW_INSTALLPATH>/pradeep/GTW_MONITORING/PHSEstatFile.dat"
+sftpfilename = "<GTW_INSTALLPATH>/pradeep/GTW_MONITORING/SFTPstatFile.dat"
+AS2filename = "<GTW_INSTALLPATH>/pradeep/GTW_MONITORING/AS2statFile.dat"
+#datafile = "<GTW_INSTALLPATH>/pradeep/GTW_MONITORING/GatewayFailedTransferfile.dat"
+datafile = "<log-path>/gateway/GatewayFailedTransferfile.dat"
+fdata = open(datafile, "a+")
+with open(phsefilename) as fphse:
+    fphsecontent = fphse.readlines()
+prev_phseoriginator = "0"
+prev_phsedestination = "0"
+
+for line in fphsecontent:
+        phselinestr = re.split(r'\W+', line)
+        #print(phselinestr)
+        phselinestr[2] = "IDENTIFIER="+phselinestr[2]
+        str1 = str(phselinestr[5])
+        str2 = str(phselinestr[6])
+        phselinestr[5] = ("DATE=20"+str1[0:2]+"-"+str1[2:4]+"-"+str1[4:6]+" "+str2[0:2]+":"+str2[2:4]+":"+str2[4:6]+" CEST")
+        #phselinestr[5] = "TIMESTAMP="+phselinestr[5]+"-"+phselinestr[6]+"CET"
+        phselinestr[12] = "PROT="+phselinestr[12]
+        phselinestr[13] = "ORIGINATOR="+phselinestr[13]
+        phselinestr[14] = "DESTINATION="+phselinestr[14]
+        #phselinestr[15] = "FILENAME=/"+phselinestr[15]+"/"+phselinestr[16]+"/"+phselinestr[17]+"/"+phselinestr[18]+"."+phselinestr[19]
+        phselinestr[15] = "FILE_IN_GATEWAY="+str(phselinestr[15:-5])
+        phselinestr[21] = "FILENAME="+str(phselinestr[-4])
+        phselinestr[22] = "FILESIZE="+phselinestr[-3]
+        if prev_phseoriginator not in str(phselinestr[13]) and prev_phsedestination not in str(phselinestr[14]):
+        #       print(phselinestr[2],phselinestr[5],phselinestr[12],phselinestr[13],phselinestr[14],phselinestr[15],phselinestr[22])
+                fdata.write(phselinestr[2])
+               fdata.write(" ")
+                fdata.write(phselinestr[5])
+                fdata.write(" ")
+                fdata.write(phselinestr[12])
+                fdata.write(" ")
+                fdata.write(phselinestr[13])
+                fdata.write(" ")
+                fdata.write(phselinestr[14])
+                fdata.write(" ")
+                fdata.write(phselinestr[15])
+                fdata.write(" ")
+                fdata.write(phselinestr[21])
+                fdata.write(" ")
+                fdata.write(phselinestr[22])
+                fdata.write("\n")
+        #else:
+        #       print(phselinestr[22])
+        prev_phsedestination = str(phselinestr[14])
+        prev_phseoriginator = str(phselinestr[13])
+
+#       os.system(line | awk -F "," '{print "Identifier="$2,"TIME="$5,"PROT="$11,"ORI="$12,"RECV="$13,"FILEIDENTIFIER="$17,"FILENAME="$18}' >> /opt/gateway/pradeep/cancelledgate.list")
+
+fphse.close()
+
+with open(sftpfilename) as fsftp:
+    fsftpcontent = fsftp.readlines()
+prev_sftporiginator = "0"
+prev_sftpdestination = "0"
+for line in fsftpcontent:
+        sftplinestr = re.split(r'\W+', line)
+        #print(sftplinestr)
+        if "O" in sftplinestr[3]:
+                sftplinestr[2] = "IDENTIFIER="+sftplinestr[2]
+                str1 = str(sftplinestr[5])
+                str2 = str(sftplinestr[6])
+                sftplinestr[5] = ("DATE=20"+str1[0:2]+"-"+str1[2:4]+"-"+str1[4:6]+" "+str2[0:2]+":"+str2[2:4]+":"+str2[4:6]+" CEST")
+                #sftplinestr[5] = "TIMESTAMP="+sftplinestr[5]+"-"+sftplinestr[6]+"CET"
+                sftplinestr[12] = "PROT="+sftplinestr[12]
+                sftplinestr[13] = "ORIGINATOR="+sftplinestr[13]
+                sftplinestr[14] = "DESTINATION="+sftplinestr[14]
+                sftplinestr[15] = "FILE_IN_GATEWAY="+str(sftplinestr[15:-5])
+        #sftplinestr[15] = "FILE_IN_GATEWAY=/"+sftplinestr[15]+"/"+sftplinestr[16]+"/"+sftplinestr[17]+"/"+sftplinestr[18]+"."+sftplinestr[19]
+                sftplinestr[20] = "FILENAME="+str(sftplinestr[-5:-3])
+        #sftplinestr[20] = "FILENAME="+sftplinestr[20]+"."+sftplinestr[21]
+                sftplinestr[22] = "FILESIZE="+sftplinestr[-3]
+                if prev_sftporiginator not in str(sftplinestr[13]) and prev_sftpdestination not in str(sftplinestr[14]):
+        #               print(sftplinestr[2],sftplinestr[5],sftplinestr[12],sftplinestr[13],sftplinestr[14],sftplinestr[15],sftplinestr[20],sftplinestr[22])
+                        fdata.write(sftplinestr[2])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[5])
+                        fdata.write(" ")
+               fdata.write(" ")
+                fdata.write(phselinestr[5])
+                fdata.write(" ")
+                fdata.write(phselinestr[12])
+                fdata.write(" ")
+                fdata.write(phselinestr[13])
+                fdata.write(" ")
+                fdata.write(phselinestr[14])
+                fdata.write(" ")
+                fdata.write(phselinestr[15])
+                fdata.write(" ")
+                fdata.write(phselinestr[21])
+                fdata.write(" ")
+                fdata.write(phselinestr[22])
+                fdata.write("\n")
+        #else:
+        #       print(phselinestr[22])
+        prev_phsedestination = str(phselinestr[14])
+        prev_phseoriginator = str(phselinestr[13])
+
+#       os.system(line | awk -F "," '{print "Identifier="$2,"TIME="$5,"PROT="$11,"ORI="$12,"RECV="$13,"FILEIDENTIFIER="$17,"FILENAME="$18}' >> /opt/gateway/pradeep/cancelledgate.list")
+
+fphse.close()
+
+with open(sftpfilename) as fsftp:
+    fsftpcontent = fsftp.readlines()
+prev_sftporiginator = "0"
+prev_sftpdestination = "0"
+for line in fsftpcontent:
+        sftplinestr = re.split(r'\W+', line)
+        #print(sftplinestr)
+        if "O" in sftplinestr[3]:
+                sftplinestr[2] = "IDENTIFIER="+sftplinestr[2]
+                str1 = str(sftplinestr[5])
+                str2 = str(sftplinestr[6])
+                sftplinestr[5] = ("DATE=20"+str1[0:2]+"-"+str1[2:4]+"-"+str1[4:6]+" "+str2[0:2]+":"+str2[2:4]+":"+str2[4:6]+" CEST")
+                #sftplinestr[5] = "TIMESTAMP="+sftplinestr[5]+"-"+sftplinestr[6]+"CET"
+                sftplinestr[12] = "PROT="+sftplinestr[12]
+                sftplinestr[13] = "ORIGINATOR="+sftplinestr[13]
+                sftplinestr[14] = "DESTINATION="+sftplinestr[14]
+                sftplinestr[15] = "FILE_IN_GATEWAY="+str(sftplinestr[15:-5])
+        #sftplinestr[15] = "FILE_IN_GATEWAY=/"+sftplinestr[15]+"/"+sftplinestr[16]+"/"+sftplinestr[17]+"/"+sftplinestr[18]+"."+sftplinestr[19]
+                sftplinestr[20] = "FILENAME="+str(sftplinestr[-5:-3])
+        #sftplinestr[20] = "FILENAME="+sftplinestr[20]+"."+sftplinestr[21]
+                sftplinestr[22] = "FILESIZE="+sftplinestr[-3]
+                if prev_sftporiginator not in str(sftplinestr[13]) and prev_sftpdestination not in str(sftplinestr[14]):
+        #               print(sftplinestr[2],sftplinestr[5],sftplinestr[12],sftplinestr[13],sftplinestr[14],sftplinestr[15],sftplinestr[20],sftplinestr[22])
+                        fdata.write(sftplinestr[2])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[5])
+                        fdata.write(" ")
+               fdata.write(" ")
+                fdata.write(phselinestr[5])
+                fdata.write(" ")
+                fdata.write(phselinestr[12])
+                fdata.write(" ")
+                fdata.write(phselinestr[13])
+                fdata.write(" ")
+                fdata.write(phselinestr[14])
+                fdata.write(" ")
+                fdata.write(phselinestr[15])
+                fdata.write(" ")
+                fdata.write(phselinestr[21])
+                fdata.write(" ")
+                fdata.write(phselinestr[22])
+                fdata.write("\n")
+        #else:
+        #       print(phselinestr[22])
+        prev_phsedestination = str(phselinestr[14])
+        prev_phseoriginator = str(phselinestr[13])
+
+#       os.system(line | awk -F "," '{print "Identifier="$2,"TIME="$5,"PROT="$11,"ORI="$12,"RECV="$13,"FILEIDENTIFIER="$17,"FILENAME="$18}' >> /opt/gateway/pradeep/cancelledgate.list")
+
+fphse.close()
+
+with open(sftpfilename) as fsftp:
+    fsftpcontent = fsftp.readlines()
+prev_sftporiginator = "0"
+prev_sftpdestination = "0"
+for line in fsftpcontent:
+        sftplinestr = re.split(r'\W+', line)
+        #print(sftplinestr)
+        if "O" in sftplinestr[3]:
+                sftplinestr[2] = "IDENTIFIER="+sftplinestr[2]
+                str1 = str(sftplinestr[5])
+                str2 = str(sftplinestr[6])
+                sftplinestr[5] = ("DATE=20"+str1[0:2]+"-"+str1[2:4]+"-"+str1[4:6]+" "+str2[0:2]+":"+str2[2:4]+":"+str2[4:6]+" CEST")
+                #sftplinestr[5] = "TIMESTAMP="+sftplinestr[5]+"-"+sftplinestr[6]+"CET"
+                sftplinestr[12] = "PROT="+sftplinestr[12]
+                sftplinestr[13] = "ORIGINATOR="+sftplinestr[13]
+                sftplinestr[14] = "DESTINATION="+sftplinestr[14]
+                sftplinestr[15] = "FILE_IN_GATEWAY="+str(sftplinestr[15:-5])
+        #sftplinestr[15] = "FILE_IN_GATEWAY=/"+sftplinestr[15]+"/"+sftplinestr[16]+"/"+sftplinestr[17]+"/"+sftplinestr[18]+"."+sftplinestr[19]
+                sftplinestr[20] = "FILENAME="+str(sftplinestr[-5:-3])
+        #sftplinestr[20] = "FILENAME="+sftplinestr[20]+"."+sftplinestr[21]
+                sftplinestr[22] = "FILESIZE="+sftplinestr[-3]
+                if prev_sftporiginator not in str(sftplinestr[13]) and prev_sftpdestination not in str(sftplinestr[14]):
+        #               print(sftplinestr[2],sftplinestr[5],sftplinestr[12],sftplinestr[13],sftplinestr[14],sftplinestr[15],sftplinestr[20],sftplinestr[22])
+                        fdata.write(sftplinestr[2])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[5])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[12])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[13])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[14])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[15])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[20])
+                        fdata.write(" ")
+                        fdata.write(sftplinestr[22])
+                        fdata.write(" ")
+                        fdata.write("\n")
+                #else:
+                #       print(sftplinestr[22])
+                prev_sftporiginator = str(sftplinestr[13])
+                prev_sftpdestination = str(sftplinestr[14])
+        elif str(sftplinestr[15]) != "trans":
+                sftplinestr[2] = "IDENTIFIER="+sftplinestr[2]
+                str3 = str(sftplinestr[5])
+                str4 = str(sftplinestr[6])
+                sftplinestr[5] = ("DATE=20"+str3[0:2]+"-"+str3[2:4]+"-"+str3[4:6]+" "+str4[0:2]+":"+str4[2:4]+":"+str4[4:6]+" CEST")
+                #sftplinestr[5] = "TIMESTAMP="+sftplinestr[5]+"-"+sftplinestr[6]+"CET"
+                sftplinestr[12] = "PROT="+sftplinestr[12]
+                sftplinestr[13] = "ORIGINATOR="+sftplinestr[13]
+                sftplinestr[14] = "DESTINATION="+sftplinestr[14]
+                sftplinestr[16] = "FILENAME="+str(sftplinestr[15:-3])
+         #       print(sftplinestr[2],sftplinestr[5],sftplinestr[12],sftplinestr[13],sftplinestr[14])
+                fdata.write(sftplinestr[2])
+                fdata.write(" ")
+                fdata.write(sftplinestr[5])
+                fdata.write(" ")
+                fdata.write(sftplinestr[12])
+                fdata.write(" ")
+                fdata.write(sftplinestr[13])
+                fdata.write(" ")
+                fdata.write(sftplinestr[14])
+                fdata.write(" ")
+                fdata.write(sftplinestr[16])
+                fdata.write(" ")
+                fdata.write("\n")
+        else:
+                sftplinestr[2] = "IDENTIFIER="+sftplinestr[2]
+                str3 = str(sftplinestr[5])
+                str4 = str(sftplinestr[6])
+                sftplinestr[5] = ("DATE=20"+str3[0:2]+"-"+str3[2:4]+"-"+str3[4:6]+" "+str4[0:2]+":"+str4[2:4]+":"+str4[4:6]+" CEST")
+                #sftplinestr[5] = "TIMESTAMP="+sftplinestr[5]+"-"+sftplinestr[6]+"CET"
+                sftplinestr[12] = "PROT="+sftplinestr[12]
+                sftplinestr[13] = "ORIGINATOR="+sftplinestr[13]
+                sftplinestr[14] = "DESTINATION="+sftplinestr[14]
+                sftplinestr[15] = "FILENAME="+str(sftplinestr[-6:-4])
+         #       print(sftplinestr[2],sftplinestr[5],sftplinestr[12],sftplinestr[13],sftplinestr[14])
+                fdata.write(sftplinestr[2])
+                fdata.write(" ")
+                fdata.write(sftplinestr[5])
+                fdata.write(" ")
+                fdata.write(sftplinestr[12])
+                fdata.write(" ")
+                fdata.write(sftplinestr[13])
+                fdata.write(" ")
+                fdata.write(sftplinestr[14])
+                fdata.write(" ")
+                fdata.write(sftplinestr[15])
+                fdata.write(" ")
+                fdata.write("\n")
+
+
+
+fsftp.close()
+
+with open(AS2filename) as fas2:
+    fas2content = fas2.readlines()
+
+for line in fas2content:
+        as2linestr = re.split(r'\W+', line)
+       # print(as2linestr)
+        as2linestr[2] = "IDENTIFIER="+as2linestr[2]
+        str1 = str(as2linestr[5])
+        str2 = str(as2linestr[6])
+        as2linestr[5] = ("DATE=20"+str1[0:2]+"-"+str1[2:4]+"-"+str1[4:6]+" "+str2[0:2]+":"+str2[2:4]+":"+str2[4:6]+" CEST")
+        #as2linestr[5] = "TIMESTAMP="+as2linestr[5]+"-"+as2linestr[6]+"CET"
+        as2linestr[12] = "PROT="+as2linestr[12]
+        as2linestr[18] = "ORIGINATOR="+as2linestr[18]
+        as2linestr[19] = "DESTINATION="+as2linestr[19]
+        as2linestr[20] = "FILE_IN_GATEWAY=/"+as2linestr[20]+"/"+as2linestr[21]+"/"+as2linestr[22]+"/"+as2linestr[23]+"."+as2linestr[24]
+        as2linestr[26] = "FILESIZE="+as2linestr[26]
+       # print(as2linestr[2],as2linestr[5],as2linestr[12],as2linestr[18],as2linestr[19],as2linestr[20],as2linestr[26])
+
+fas2.close()
+fdata.close()
+
+
